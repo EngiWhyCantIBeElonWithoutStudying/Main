@@ -20,7 +20,7 @@ blur = cv2.GaussianBlur(closing,(7,7),0)
 
 edges = cv2.Canny(blur,100,150)
 
-contours, _= cv2.findContours(edges, cv2.RETR_EXTERNAL,
+_ , contours, _= cv2.findContours(edges, cv2.RETR_EXTERNAL,
                         cv2.CHAIN_APPROX_SIMPLE)
 
 #in pixels!
