@@ -57,27 +57,49 @@ for i in range(len(newList)):
     pts = np.where(mask_contours == 255)
     pixel_coords.append([i,[pts[0],pts[1]]]) #i,[[x],[y]])
 ################
-
-for i in range(len(pixel_coords)): #4 times
+############# get percentage of colors
+gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+white_cnt = 0
+total_cnt = 0
+for i in range(len(pixel_coords)):
     currentBlob = pixel_coords[i]
     if currentBlob[0] == 1: #first blob
-        points = currentBlob[1]
+        points = currentBlob[1] #x,y
         for j in range(len(points[0])):
             x = points[0][j]
             y = points[1][j]
-            img[x,y] = (255,0,0)
-    if currentBlob[0] == 2: #first blob
-        points = currentBlob[1]
-        for j in range(len(currentBlob[1][1])):
-            x = points[0][j]
-            y = points[1][j]
-            img[x,y] = (0,255,0)
-    if currentBlob[0] == 3: #first blob
-        points = currentBlob[1]
-        for j in range(len(currentBlob[1][1])):
-            x = points[0][j]
-            y = points[1][j]
-            img[x,y] = (0,0,255)
+            # if img[x,y,0] > 125 and img[x,y,1] > 125 and img[x,y,2] > 125: # check H,S,V values
+            total_cnt = total_cnt + 1
+            if gray[x,y] > 200:
+                white_cnt = white_cnt + 1
+
+percent = white_cnt/total_cnt
+print(percent * 100)
+
+
+
+########## use different color for each mask
+# for i in range(len(pixel_coords)): #4 times
+#     currentBlob = pixel_coords[i]
+#     if currentBlob[0] == 1: #first blob
+#         points = currentBlob[1]
+#         for j in range(len(points[0])):
+#             x = points[0][j]
+#             y = points[1][j]
+#             img[x,y] = (255,0,0)
+#     if currentBlob[0] == 2: #first blob
+#         points = currentBlob[1]
+#         for j in range(len(points[0])):
+#             x = points[0][j]
+#             y = points[1][j]
+#             img[x,y] = (0,255,0)
+#     if currentBlob[0] == 3: #first blob
+#         points = currentBlob[1]
+#         for j in range(len(points[0])):
+#             x = points[0][j]
+#             y = points[1][j]
+#             img[x,y] = (0,0,255)
+##################
 
 
 
@@ -85,7 +107,7 @@ cv2.namedWindow("output", cv2.WINDOW_NORMAL)
 cv2.resizeWindow("output", 1080,600)
 # show output
 while True:
-    cv2.imshow('output',img)                 # Displaying image with detected contours.
+    cv2.imshow('output',gray)                 # Displaying image with detected contours.
     if cv2.waitKey(1) & 0xFF == 27:
         break
 cv2.destroyAllWindows()
