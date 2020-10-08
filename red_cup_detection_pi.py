@@ -4,12 +4,14 @@ import numpy as np
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 import time
+import statistics
+import pygame
 
 
 #img = cv2.imread("socks.jpg", flags=cv2.IMREAD_UNCHANGED)
 camera = PiCamera()
 camera.resolution = (640, 480)
-camera.framerate = 32
+camera.framerate = 10
 camera.iso = 0            # 1:1600 default is 0 (auto)
 camera.brightness = 55      # 0:100 default is 50
 camera.contrast = 0        # -100:100 default is 0
@@ -31,9 +33,11 @@ raw_capture = PiRGBArray(camera, size=(640, 480))
 
 # allow the camera to warmup
 time.sleep(0.1)
+pygame.mixer.init()
+
 # capture frames from the camera
 for frame in camera.capture_continuous(raw_capture, format="bgr", use_video_port=True):
-
+        
         img = frame.array
         img = cv2.GaussianBlur(img,(7,7),0)
         #img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT)
@@ -43,11 +47,11 @@ for frame in camera.capture_continuous(raw_capture, format="bgr", use_video_port
 
         lower_mask = cv2.inRange(img_hsv, np.array([0,0,0]), np.array([255,245,71]))
         #lower_mask = ~lower_mask
-        cv2.imshow('lower', lower_mask)
+        #cv2.imshow('lower', lower_mask)
 
         uper_mask = cv2.inRange(img_hsv, np.array([0,0,0]), np.array([255,199,145]))
         uper_mask = ~uper_mask
-        cv2.imshow('Upper', uper_mask)
+        #cv2.imshow('Upper', uper_mask)
 
         mask = cv2.bitwise_or(lower_mask, uper_mask)
 
@@ -60,7 +64,7 @@ for frame in camera.capture_continuous(raw_capture, format="bgr", use_video_port
 
 
         blur = cv2.GaussianBlur(opening,(7,7),0)
-        cv2.imshow('Blur', blur)
+        #cv2.imshow('Blur', blur)
         edges = cv2.Canny(blur,100,150)
         #cv2.imshow('Edges', edges)
 
@@ -83,24 +87,79 @@ for frame in camera.capture_continuous(raw_capture, format="bgr", use_video_port
                 x,y,w,h = cv2.boundingRect(c)
 
 
-                cv2.rectangle(img,(x,y),(x+w,y+h),(0,0,255),2)
-                cv2.circle(img, (cx, cy), 5, (0, 255, 0))
+                #cv2.rectangle(img,(x,y),(x+w,y+h),(0,0,255),2)
+                #cv2.circle(img, (cx, cy), 5, (0, 255, 0))
                 newList.append(c)
 
         ######### getting pixel locations
         pixel_coords = []
-        for i in range(len(newList)):
-            # create a mask image that contains the contour filled in
-            mask_contours = np.zeros_like(img)
-            cv2.drawContours(mask_contours,[newList[i]],-1,(255,255,255), thickness=-1) # Note: cotours argument need to be list type
+        if cv2.waitKey(1) & 0xFF == ord('b'):
+            for i in range(len(newList)):
+                # create a mask image that contains the contour filled in
+                mask_contours = np.zeros_like(img)
+                cv2.drawContours(mask_contours,[newList[i]],-1,(255,255,255), thickness=-1) # Note: cotours argument need to be list type
 
-            # access the pixels and where pixel value = 255, store their locations
-            pts = np.where(mask_contours == 255)
-            pixel_coords.append([i,[pts[0],pts[1]]]) #i,[[x],[y]])
-        ########################
-        ##########
+                # access the pixels and where pixel value = 255, store their locations
+                pts = np.where(mask_contours == 255)
+                pixel_coords.append([i,[pts[0],pts[1]]]) #i,[[x],[y]])
+            ########################
+            ##########
+            hue =[]
+            saturation = []
+            value = []
+            hsv = []
+            prev_hsv=[]
+            current_hsv = []
+            for i in range(len(pixel_coords)): #4 times
+                for k in range(len(newList)): 
+                    currentBlob = pixel_coords[i]
+                    if currentBlob[0] == k: #first blob
+                        points = currentBlob[1]
+                        for j in range(0,len(points[0]),100): #increase the value '150' for speed and decrease for accuracy
+                            x = points[0][j]
+                            y = points[1][j]
+                            pixel = img_hsv[x][y]
+                            hue.append(pixel[0])
+                            saturation.append(pixel[1])
+                            value.append(pixel[2])
+                hsv.append([statistics.mean(hue),statistics.mean(saturation),statistics.mean(value)])
+
+            print(hsv)
+            for i in range(1,len(hsv),1):
+                prev_hsv  = hsv[i-1]
+                current_hsv = hsv[i]
+                tolerance = 25
+                upper_hsv = [z+tolerance for z  in current_hsv]
+                lower_hsv = [z-tolerance for z  in current_hsv]
+                # print(upper_hsv,lower_hsv)
+                if ((upper_hsv[0]>=prev_hsv[0] and prev_hsv[0]>=lower_hsv[0]) and (upper_hsv[1]>=prev_hsv[1] and prev_hsv[1]>=lower_hsv[1])) and (upper_hsv[2]>=prev_hsv[2] and prev_hsv[2]>=lower_hsv[2]): #checking the hue
+                    print("found a match!",i,"and",i+1)
+                
+                    for c in range(len(newList)):
+                        if (c==i or c==(i-1)):
+                            x,y,w,h = cv2.boundingRect(newList[c])
+                            cv2.rectangle(img,(x,y),(x+w,y+h),(0,0,255),2)
+                            cv2.putText(img,str(c+1),(x+round(w/2),y+round(h/2)),fontFace= cv2.FONT_HERSHEY_PLAIN,fontScale=5,color=(0,0,255),thickness=5)
+                            #time.sleep(0.5)
+                            pygame.mixer.music.load('true.mp3')
+                            pygame.mixer.music.play(0)
+                            while pygame.mixer.music.get_busy() == True:
+                                continue
+                            cv2.imshow('Video', img)
+                            cv2.imshow('Pair!', img)
+                else:
+                    print("no pair")
+                    pygame.mixer.music.load('false.mp3')
+                    pygame.mixer.music.play(0)
+                    while pygame.mixer.music.get_busy() == True:
+                        continue
+                    blankimg = np.zeros_like(img)
+                    cv2.imshow('Pair!', blankimg)
+                
+        ##############
         cv2.imshow('Video', img)
-        time.sleep(0.3)
+        
+        
         if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
