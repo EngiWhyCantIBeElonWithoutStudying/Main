@@ -8,7 +8,6 @@ import statistics
 import pygame
 
 
-#img = cv2.imread("socks.jpg", flags=cv2.IMREAD_UNCHANGED)
 camera = PiCamera()
 camera.resolution = (640, 480)
 camera.framerate = 10
@@ -23,7 +22,8 @@ camera.exposure_mode = 'off'
 camera.vflip = True
 raw_capture = PiRGBArray(camera, size=(640, 480))
 
-
+errorImg_unmatched = cv2.imread('No!.jpg')
+errorImg_single = cv2.imread('lone.jpg')
 ## Options for the border area
 #top = int(0.01* camera.resolution[1])
 #bottom = top
@@ -40,29 +40,23 @@ for frame in camera.capture_continuous(raw_capture, format="bgr", use_video_port
         
         img = frame.array
         img = cv2.GaussianBlur(img,(7,7),0)
-        #img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT)
+        
+        # Masking
         img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-        #mask = cv2.inRange(img_hsv, np.array([128,0,0]), np.array([255,255,255]))
-
-
         lower_mask = cv2.inRange(img_hsv, np.array([0,0,0]), np.array([255,245,71]))
-        #lower_mask = ~lower_mask
-        #cv2.imshow('lower', lower_mask)
-
         uper_mask = cv2.inRange(img_hsv, np.array([0,0,0]), np.array([255,199,145]))
         uper_mask = ~uper_mask
         #cv2.imshow('Upper', uper_mask)
-
         mask = cv2.bitwise_or(lower_mask, uper_mask)
-
         #cv2.imshow('mask', mask)
 
+        # Morphological operation for better quality
         kernel_open = np.ones((7,7),np.uint8)
         kernel_close = np.ones((7,7),np.uint8)
         closing = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_close)
         opening = cv2.morphologyEx(closing, cv2.MORPH_OPEN, kernel_open)
 
-
+        # Edge detection
         blur = cv2.GaussianBlur(opening,(7,7),0)
         #cv2.imshow('Blur', blur)
         edges = cv2.Canny(blur,100,150)
@@ -153,8 +147,15 @@ for frame in camera.capture_continuous(raw_capture, format="bgr", use_video_port
                     pygame.mixer.music.play(0)
                     while pygame.mixer.music.get_busy() == True:
                         continue
-                    blankimg = np.zeros_like(img)
-                    cv2.imshow('Pair!', blankimg)
+                    cv2.imshow('Pair!', errorImg_unmatched)
+            if(len(newList)==1):
+                print("Forever alone...")
+                pygame.mixer.music.load('loney.mp3')
+                pygame.mixer.music.play(0)
+                while pygame.mixer.music.get_busy() == True:
+                    continue
+                cv2.imshow('Pair!', errorImg_single)
+            
                 
         ##############
         cv2.imshow('Video', img)
