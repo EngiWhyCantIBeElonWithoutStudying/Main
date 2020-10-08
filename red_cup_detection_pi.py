@@ -98,7 +98,7 @@ for frame in camera.capture_continuous(raw_capture, format="bgr", use_video_port
             pts = np.where(mask_contours == 255)
             pixel_coords.append([i,[pts[0],pts[1]]]) #i,[[x],[y]])
         ########################
-
+        ##########
         cv2.imshow('Video', img)
         time.sleep(0.3)
         if cv2.waitKey(1) & 0xFF == ord('q'):
