@@ -6,10 +6,18 @@ from picamera import PiCamera
 import time
 
 
-#img = cv2.imread("socks.jpg", flags=cv2.IMREAD_UNCHANGED)
 camera = PiCamera()
 camera.resolution = (640, 480)
 camera.framerate = 32
+camera.iso = 0            # 1:1600 default is 0 (auto)
+camera.brightness = 55      # 0:100 default is 50
+camera.contrast = 0        # -100:100 default is 0
+camera.saturation = 30     # -100:100 default is 0
+camera.sharpness = 100      # -100:100 default is 0
+camera.shutter_speed = 0    # in microseconds default is auto (0)
+camera.exposure_compensation = 3 # -25:25 default is 0 (each value represents 1/6th of a stop)
+camera.exposure_mode = 'off'
+camera.vflip = True
 raw_capture = PiRGBArray(camera, size=(640, 480))
 
 def nothing(x):
@@ -59,13 +67,15 @@ for frame in camera.capture_continuous(raw_capture, format="bgr", use_video_port
         cv2.imshow('lower', lower_mask)
 
         uper_mask = cv2.inRange(img_hsv, np.array([ULH,ULS,ULV]), np.array([UUH,UUS,UUV]))
+        uper_mask = ~uper_mask
         cv2.imshow('Upper', uper_mask)
 
         mask = cv2.bitwise_or(lower_mask, uper_mask)
 
-        kernel = np.ones((15,15),np.uint8)
-        opening = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-        closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, kernel)
+        kernel = np.ones((20,20),np.uint8)
+        closing = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+        opening = cv2.morphologyEx(closing, cv2.MORPH_OPEN, kernel)
+        
 
 
         blur = cv2.GaussianBlur(closing,(7,7),0)
@@ -102,7 +112,7 @@ for frame in camera.capture_continuous(raw_capture, format="bgr", use_video_port
 
         raw_capture.truncate(0)
 
-
+cv2.destroyAllWindows()
 
 
 
