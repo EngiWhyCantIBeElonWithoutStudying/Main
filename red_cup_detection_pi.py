@@ -39,8 +39,8 @@ for frame in camera.capture_continuous(raw_capture, format="bgr", use_video_port
         #img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT)
         img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         #mask = cv2.inRange(img_hsv, np.array([128,0,0]), np.array([255,255,255]))
-        
-        
+
+
         lower_mask = cv2.inRange(img_hsv, np.array([0,0,0]), np.array([255,245,71]))
         #lower_mask = ~lower_mask
         cv2.imshow('lower', lower_mask)
@@ -50,9 +50,9 @@ for frame in camera.capture_continuous(raw_capture, format="bgr", use_video_port
         cv2.imshow('Upper', uper_mask)
 
         mask = cv2.bitwise_or(lower_mask, uper_mask)
-        
+
         #cv2.imshow('mask', mask)
-    
+
         kernel_open = np.ones((7,7),np.uint8)
         kernel_close = np.ones((7,7),np.uint8)
         closing = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_close)
@@ -87,6 +87,18 @@ for frame in camera.capture_continuous(raw_capture, format="bgr", use_video_port
                 cv2.circle(img, (cx, cy), 5, (0, 255, 0))
                 newList.append(c)
 
+        ######### getting pixel locations
+        pixel_coords = []
+        for i in range(len(newList)):
+            # create a mask image that contains the contour filled in
+            mask_contours = np.zeros_like(img)
+            cv2.drawContours(mask_contours,[newList[i]],-1,(255,255,255), thickness=-1) # Note: cotours argument need to be list type
+
+            # access the pixels and where pixel value = 255, store their locations
+            pts = np.where(mask_contours == 255)
+            pixel_coords.append([i,[pts[0],pts[1]]]) #i,[[x],[y]])
+        ########################
+
         cv2.imshow('Video', img)
         time.sleep(0.3)
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -95,11 +107,3 @@ for frame in camera.capture_continuous(raw_capture, format="bgr", use_video_port
         raw_capture.truncate(0)
 
 cv2.destroyAllWindows()
-
-
-
-
-
-
-
-

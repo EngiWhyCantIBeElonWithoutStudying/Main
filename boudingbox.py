@@ -26,7 +26,6 @@ _ , contours, _= cv2.findContours(edges, cv2.RETR_EXTERNAL,
 #in pixels!
 min_area = 500
 # max_area = 300
-print("list before: ", len(contours))
 newList = [];
 for c in contours:
     area = cv2.contourArea(c)
@@ -38,19 +37,55 @@ for c in contours:
 
         x,y,w,h = cv2.boundingRect(c)
 
-
-        cv2.rectangle(img,(x,y),(x+w,y+h),(0,0,255),2)
-        cv2.circle(img, (cx, cy), 5, (0, 255, 0))
+        # draw rectangles
+        # cv2.rectangle(img,(x,y),(x+w,y+h),(0,0,255),2)
+        # cv2.circle(img, (cx, cy), 5, (0, 255, 0))
         newList.append(c)
-    # else:
-    #     contours.remove(c)
-# cv2.drawContours(img, newList,-1,(0,255,0),3)
 
-cv2.imwrite("socks_detection_bb.png", img)
 
-# cv2.imshow('Video', img)
-# key = cv2.waitKey(1)
-# if cv2.waitKey(1) & 0xFF == ord('q'):
-#         break
+# cv2.namedWindow("output", cv2.WINDOW_NORMAL)
+# cv2.resizeWindow("output", 1080,600)
+# cv2.drawContours(img, newList,-1,(0,255,0),3) # draw and show contours
+############
+pixel_coords = []
+for i in range(len(newList)):
+    # create a mask image that contains the contour filled in
+    mask_contours = np.zeros_like(img)
+    cv2.drawContours(mask_contours,[newList[i]],-1,(255,255,255), thickness=-1) # cotours argument need to be list type
 
-# raw_capture.truncate(0)
+    # # access the pixels and where pixel value = 255, store their locations
+    pts = np.where(mask_contours == 255)
+    pixel_coords.append([i,[pts[0],pts[1]]]) #i,[[x],[y]])
+################
+
+for i in range(len(pixel_coords)): #4 times
+    currentBlob = pixel_coords[i]
+    if currentBlob[0] == 1: #first blob
+        points = currentBlob[1]
+        for j in range(len(points[0])):
+            x = points[0][j]
+            y = points[1][j]
+            img[x,y] = (255,0,0)
+    if currentBlob[0] == 2: #first blob
+        points = currentBlob[1]
+        for j in range(len(currentBlob[1][1])):
+            x = points[0][j]
+            y = points[1][j]
+            img[x,y] = (0,255,0)
+    if currentBlob[0] == 3: #first blob
+        points = currentBlob[1]
+        for j in range(len(currentBlob[1][1])):
+            x = points[0][j]
+            y = points[1][j]
+            img[x,y] = (0,0,255)
+
+
+
+cv2.namedWindow("output", cv2.WINDOW_NORMAL)
+cv2.resizeWindow("output", 1080,600)
+# show output
+while True:
+    cv2.imshow('output',img)                 # Displaying image with detected contours.
+    if cv2.waitKey(1) & 0xFF == 27:
+        break
+cv2.destroyAllWindows()
