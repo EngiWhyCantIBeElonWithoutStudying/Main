@@ -1,6 +1,6 @@
 # Vision InPAIRed 
 
-A low-cost interactive sock pairing machine for visually impaired
+A low-cost interactive sock pairing machine for the visually impaired
 
 ## Getting Started
 
